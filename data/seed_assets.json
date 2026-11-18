@@ -1,0 +1,33 @@
+[
+  {"ticker": "BBCA.JK", "name": "Bank Central Asia Tbk", "category": "Saham LQ45", "sector": "Keuangan"},
+  {"ticker": "BBRI.JK", "name": "Bank Rakyat Indonesia (Persero) Tbk", "category": "Saham LQ45", "sector": "Keuangan"},
+  {"ticker": "BMRI.JK", "name": "Bank Mandiri (Persero) Tbk", "category": "Saham LQ45", "sector": "Keuangan"},
+  {"ticker": "BBNI.JK", "name": "Bank Negara Indonesia (Persero) Tbk", "category": "Saham LQ45", "sector": "Keuangan"},
+  {"ticker": "ASII.JK", "name": "Astra International Tbk", "category": "Saham LQ45", "sector": "Perindustrian"},
+  {"ticker": "TLKM.JK", "name": "Telkom Indonesia (Persero) Tbk", "category": "Saham LQ45", "sector": "Infrastruktur"},
+  {"ticker": "ICBP.JK", "name": "Indofood CBP Sukses Makmur Tbk", "category": "Saham LQ45", "sector": "Konsumer Primer"},
+  {"ticker": "INDF.JK", "name": "Indofood Sukses Makmur Tbk", "category": "Saham LQ45", "sector": "Konsumer Primer"},
+  {"ticker": "UNVR.JK", "name": "Unilever Indonesia Tbk", "category": "Saham LQ45", "sector": "Konsumer Primer"},
+  {"ticker": "KLBF.JK", "name": "Kalbe Farma Tbk", "category": "Saham LQ45", "sector": "Kesehatan"},
+  {"ticker": "ADRO.JK", "name": "Adaro Energy Indonesia Tbk", "category": "Saham LQ45", "sector": "Energi"},
+  {"ticker": "PTBA.JK", "name": "Bukit Asam Tbk", "category": "Saham LQ45", "sector": "Energi"},
+  {"ticker": "ANTM.JK", "name": "Aneka Tambang Tbk", "category": "Saham LQ45", "sector": "Bahan Baku"},
+  {"ticker": "CPIN.JK", "name": "Charoen Pokphand Indonesia Tbk", "category": "Saham LQ45", "sector": "Konsumer Primer"},
+  {"ticker": "PGAS.JK", "name": "Perusahaan Gas Negara Tbk", "category": "Saham LQ45", "sector": "Utilitas"},
+
+  {"ticker": "^JKSE", "name": "Indeks Harga Saham Gabungan (IHSG)", "category": "Indeks", "sector": "Indeks Pasar"},
+  {"ticker": "EIDO", "name": "iShares MSCI Indonesia ETF", "category": "ETF", "sector": "Pasar Saham Indonesia"},
+  {"ticker": "R-LQ45X.JK", "name": "Premier ETF LQ-45", "category": "ETF", "sector": "Indeks LQ45"},
+  {"ticker": "XISR.JK", "name": "Premier ETF SRI-KEHATI", "category": "ETF", "sector": "ESG & Berkelanjutan"},
+  {"ticker": "XIIT.JK", "name": "Premier ETF IDX30", "category": "ETF", "sector": "Indeks IDX30"},
+
+  {"ticker": "IDR_PU_1M", "name": "Pasar Uang Deposito 1 Bulan (Proxy)", "category": "Pasar Uang", "sector": "Instrumen Berpendapatan Tetap"},
+  {"ticker": "IDR_PU_OBL", "name": "Reksa Dana Pendapatan Tetap SBN (Proxy)", "category": "Obligasi", "sector": "Surat Berharga Negara"},
+  {"ticker": "SBN_ORI", "name": "Obligasi Negara Ritel ORI (Proxy)", "category": "Obligasi", "sector": "Surat Berharga Negara"},
+  {"ticker": "SBN_SR", "name": "Sukuk Ritel SR (Proxy Syariah)", "category": "Obligasi", "sector": "Surat Berharga Syariah"},
+  {"ticker": "SBN_FR", "name": "Surat Utang Negara Fixed Rate FR (Proxy)", "category": "Obligasi", "sector": "Surat Berharga Negara"},
+
+  {"ticker": "BTC-USD", "name": "Bitcoin", "category": "Kripto", "sector": "Mata Uang Kripto"},
+  {"ticker": "ETH-USD", "name": "Ethereum", "category": "Kripto", "sector": "Mata Uang Kripto"},
+  {"ticker": "SOL-USD", "name": "Solana", "category": "Kripto", "sector": "Mata Uang Kripto"}
+]

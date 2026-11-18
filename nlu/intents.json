@@ -1,0 +1,165 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "halo", "hai", "hello", "hei", "selamat pagi", "selamat siang", "selamat sore", "selamat malam",
+        "pagi", "siang", "sore", "malam", "assalamualaikum", "halo bot", "halo investbot"
+      ]
+    },
+    {
+      "tag": "bot_identity",
+      "patterns": [
+        "siapa kamu", "kamu siapa", "nama kamu siapa", "kamu robot apa", "apa itu investbot",
+        "perkenalkan dirimu", "kamu aplikasi apa", "investbuddy itu apa"
+      ]
+    },
+    {
+      "tag": "help",
+      "patterns": [
+        "bantuan", "bisa bantu apa", "menu", "panduan", "fitur apa saja", "tolong", "cara pakai",
+        "bagaimana cara menggunakan kamu", "apa saja fitur investbuddy", "tampilkan menu"
+      ]
+    },
+    {
+      "tag": "faq_data_source",
+      "patterns": [
+        "data dari mana", "sumber data dari mana", "kamu dapat data dari mana", "data kamu valid dari mana",
+        "sumber crawling kamu apa", "sumber data pasar", "darimana data historis diambil"
+      ]
+    },
+    {
+      "tag": "data_last_update",
+      "patterns": [
+        "data terakhir kapan", "kapan update terakhir", "kapan data diperbarui", "tanggal update terakhir",
+        "data harga terakhir tanggal berapa", "apakah data sudah update"
+      ]
+    },
+    {
+      "tag": "start_trend",
+      "patterns": [
+        "tren ihsg bagaimana", "cek tren harga", "bagaimana tren harga saham", "prediksi tren aset",
+        "tren harga aset", "analisis tren bbca", "lihat tren pasar", "regresi tren saham"
+      ]
+    },
+    {
+      "tag": "use_trend_for_dca",
+      "patterns": [
+        "hitung dca pakai hasil itu", "pakai return tren tadi untuk dca", "simulasikan dca dari tren ini",
+        "gunakan hasil return itu untuk kalkulator dca", "lanjut dca dengan return itu", "hitung dca pakai tren tadi"
+      ]
+    },
+    {
+      "tag": "explain_regression",
+      "patterns": [
+        "apa itu regresi linear", "jelaskan regresi linear", "maksud regresi linear apa",
+        "bagaimana regresi memprediksi harga", "pengertian regresi linear saham", "kenapa pakai regresi log-linear"
+      ]
+    },
+    {
+      "tag": "explain_r2",
+      "patterns": [
+        "r2 itu apa", "apa itu r2", "r² itu apa", "apa itu r²", "apa itu r squared", "jelaskan koefisien determinasi r2", "apa arti r kuadrat",
+        "maksud r2 tinggi atau rendah", "bagaimana cara membaca r2", "jelaskan r²", "arti r²"
+      ]
+    },
+    {
+      "tag": "start_sentiment",
+      "patterns": [
+        "sentimen bbca", "bagaimana sentimen pasar", "cek sentimen berita saham", "analisis sentimen aset",
+        "apakah sentimen pasar positif", "sentimen bbri bagaimana", "cek berita sentimen"
+      ]
+    },
+    {
+      "tag": "sentiment_news_list",
+      "patterns": [
+        "berita apa saja", "tampilkan berita terbaru", "lihat daftar beritanya", "judul berita apa saja",
+        "apa isi beritanya", "sumber berita apa saja", "berita apa yang mempengaruhi sentimen"
+      ]
+    },
+    {
+      "tag": "explain_sentiment",
+      "patterns": [
+        "apa itu analisis sentimen", "jelaskan analisis sentimen", "bagaimana bot menganalisis sentimen",
+        "maksud persentase positif netral negatif", "apa fungsi sentimen berita dalam investasi"
+      ]
+    },
+    {
+      "tag": "recommend_by_profile",
+      "patterns": [
+        "aset apa untuk profil moderat", "rekomendasi aset konservatif", "instrumen apa yang cocok untuk agresif",
+        "profil saya moderat aset apa", "rekomendasi portofolio sesuai profil saya", "rekomendasi aset untuk profil risiko"
+      ]
+    },
+    {
+      "tag": "show_asset_cluster",
+      "patterns": [
+        "bbca masuk klaster apa", "klaster saham bbri apa", "aset ini masuk profil apa", "cek klaster aset",
+        "pengelompokan klaster bbca", "apakah saham ini konservatif atau agresif"
+      ]
+    },
+    {
+      "tag": "explain_cluster",
+      "patterns": [
+        "apa itu clustering", "jelaskan pengelompokan aset k-means", "apa maksud k-means",
+        "bagaimana aset dikelompokkan", "kenapa aset dibagi jadi 3 klaster"
+      ]
+    },
+    {
+      "tag": "explain_volatility",
+      "patterns": [
+        "volatilitas itu apa", "apa arti volatilitas", "jelaskan fluktuasi dan volatilitas harga",
+        "mengapa volatilitas berhubungan dengan risiko", "apakah volatilitas tinggi selalu buruk"
+      ]
+    },
+    {
+      "tag": "start_risk_profile",
+      "patterns": [
+        "tes profil risiko", "cek profil risiko", "mulai kuesioner profil risiko", "ketahui profil risiko saya",
+        "saya tipe investor apa", "kuesioner investasi", "ukur toleransi risiko"
+      ]
+    },
+    {
+      "tag": "start_dca_calculator",
+      "patterns": [
+        "kalkulator dca", "hitung dca", "simulasi dollar cost averaging", "simulasi investasi rutin bulanan",
+        "hitung nabung rutin tiap bulan", "berapa hasil investasi berkala"
+      ]
+    },
+    {
+      "tag": "start_pension_calculator",
+      "patterns": [
+        "kalkulator dana pensiun", "hitung kebutuhan pensiun", "simulasi dana pensiun", "berapa dana pensiun yang saya butuhkan",
+        "rencana pensiun hari tua", "perhitungan dana pensiun"
+      ]
+    },
+    {
+      "tag": "faq_ojk",
+      "patterns": [
+        "apa itu ojk", "apa fungsi otoritas jasa keuangan", "apakah investasi harus terdaftar di ojk",
+        "bagaimana cara cek izin ojk", "kenapa legalitas ojk penting"
+      ]
+    },
+    {
+      "tag": "faq_sbn",
+      "patterns": [
+        "apa itu sbn", "apa itu obligasi negara ritel ori", "jelaskan surat berharga negara",
+        "apakah sbn dijamin pemerintah", "sukuk ritel itu apa"
+      ]
+    },
+    {
+      "tag": "faq_reksadana",
+      "patterns": [
+        "apa itu reksa dana", "jelaskan reksa dana untuk pemula", "apa beda reksa dana pasar uang dan saham",
+        "manajer investasi itu apa", "keuntungan reksa dana"
+      ]
+    },
+    {
+      "tag": "faq_diversification",
+      "patterns": [
+        "apa itu diversifikasi", "mengapa perlu diversifikasi portofolio", "arti jangan taruh telur dalam satu keranjang",
+        "bagaimana cara diversifikasi aset investasi"
+      ]
+    }
+  ]
+}

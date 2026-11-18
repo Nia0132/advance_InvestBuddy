@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestBuddy - Asisten Cerdas Investasi Anda</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">📈</div>
+                <div class="brand-info">
+                    <h2>InvestBuddy</h2>
+                    <span class="badge">InvestBot v2.0</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="section-title">AKSI CEPAT</p>
+                <div class="quick-actions">
+                    <button class="action-btn" onclick="sendQuickMessage('Mulai tes profil risiko')">
+                        <span class="btn-icon">🎯</span>
+                        <span>Tes Profil Risiko</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickMessage('Tren IHSG bagaimana?')">
+                        <span class="btn-icon">📊</span>
+                        <span>Tren Regresi IHSG</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickMessage('Sentimen BBCA?')">
+                        <span class="btn-icon">📰</span>
+                        <span>Sentimen Berita BBCA</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickMessage('Aset apa untuk profil Moderat?')">
+                        <span class="btn-icon">🏷️</span>
+                        <span>Klaster Aset Moderat</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickMessage('Kalkulator DCA')">
+                        <span class="btn-icon">🧮</span>
+                        <span>Kalkulator DCA</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickMessage('Kalkulator dana pensiun')">
+                        <span class="btn-icon">🏖️</span>
+                        <span>Kalkulator Pensiun</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="section-title">SUMBER DATA PASAR</p>
+                <div class="data-status-card">
+                    <div class="status-indicator online"></div>
+                    <div class="status-details">
+                        <p class="status-title">Pasar IDX & Yahoo Finance</p>
+                        <p class="status-sub" id="lastUpdateText">Update: Memuat...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="reset-chat-btn" onclick="resetSession()">
+                    <span>🔄 Mulai Sesi Baru</span>
+                </button>
+                <p class="disclaimer-text">Edukasi Finansial & Simulasi Data Nyata. Bukan Nasihat Keuangan Resmi.</p>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <header class="chat-header">
+                <div class="header-left">
+                    <div class="bot-avatar">🤖</div>
+                    <div>
+                        <h1>InvestBot Assistant</h1>
+                        <p class="bot-sub">Hybrid Deterministic + Grounded NLG (Qwen / Fallback)</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span class="mode-tag">Mode RAM 8GB Hemat</span>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messagesContainer">
+                <!-- Welcome Message -->
+                <div class="message bot-message">
+                    <div class="avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="text-content">
+                            <h3>Halo! Selamat datang di InvestBuddy 👋</h3>
+                            <p>Saya adalah <strong>InvestBot</strong>, asisten cerdas untuk memandu rencana investasi dan literasi finansial Anda berbasis data pasar riil Indonesia.</p>
+                            <p>Silakan pilih salah satu topik di bawah atau ketik langsung pertanyaan Anda:</p>
+                        </div>
+                        <div class="pill-group">
+                            <button class="pill" onclick="sendQuickMessage('Mulai tes profil risiko')">🎯 Tes Profil Risiko</button>
+                            <button class="pill" onclick="sendQuickMessage('Tren IHSG bagaimana?')">📊 Cek Tren IHSG</button>
+                            <button class="pill" onclick="sendQuickMessage('Sentimen BBCA?')">📰 Sentimen BBCA</button>
+                            <button class="pill" onclick="sendQuickMessage('Kalkulator DCA')">🧮 Kalkulator DCA</button>
+                            <button class="pill" onclick="sendQuickMessage('Data dari mana?')">ℹ️ Sumber Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <footer class="chat-input-area">
+                <form id="chatForm" onsubmit="handleChatSubmit(event)">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="userInput" 
+                            placeholder="Ketik pertanyaan (misal: 'Sentimen BBCA?', 'Hitung DCA', 'Tren IHSG')..." 
+                            autocomplete="off"
+                        >
+                        <button type="submit" id="sendBtn" class="send-btn" title="Kirim">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </footer>
+        </main>
+    </div>
+
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>
