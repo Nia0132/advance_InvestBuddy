@@ -1,6 +1,7 @@
 import requests
 import json
 import logging
+import re
 from llm.fallback_templates import (
     FALLBACK_INTENT_TEMPLATES,
     format_trend_response,
@@ -52,6 +53,19 @@ def call_ollama(prompt: str, model: str = DEFAULT_MODEL, timeout: float = 5.0) -
         logger.debug(f"Ollama tidak tersedia / timeout: {e}. Menggunakan fallback template.")
     return None
 
+LARANGAN = ("pasti untung", "dijamin untung", "return dijamin", "tanpa risiko",
+            "pasti cuan", "bebas risiko", "segera beli", "wajib beli")
+ANGKA = r"\d+(?:[.,]\d+)?"
+
+
+def _aman(teks: str, rujukan: str) -> bool:
+    """Tolak keluaran LLM yang menjanjikan untung, menambah angka baru, atau terlalu panjang."""
+    t = teks.lower()
+    if len(teks) > 1200 or any(k in t for k in LARANGAN):
+        return False
+    bersih = re.sub(r"(?m)^\s*\d+[.)]\s*", "", teks)  # abaikan nomor daftar
+    return not (set(re.findall(ANGKA, bersih)) - set(re.findall(ANGKA, rujukan)))
+
 def generate_grounded_response(intent: str, user_message: str, execution_result: dict = None) -> str:
     """
     Menghasilkan respons terpadu:
@@ -87,14 +101,17 @@ def generate_grounded_response(intent: str, user_message: str, execution_result:
     # Untuk intent bertipe edukasi/penjelasan (explain_*)
     fallback = FALLBACK_INTENT_TEMPLATES.get(intent)
 
-    if intent.startswith("explain_") or intent in ["faq_ojk", "faq_sbn", "faq_reksadana", "faq_diversification"]:
+    if fallback and (intent.startswith("explain_") or intent in
+                     ["faq_ojk", "faq_sbn", "faq_reksadana", "faq_diversification"]):
         prompt = (
             f"Pertanyaan pengguna: '{user_message}'\n\n"
             f"Fakta rujukan baku:\n{fallback}\n\n"
-            f"Instruksi: Jelaskan kembali poin-poin di atas dengan gaya bahasa yang santun, menarik, dan mudah dipahami."
+            "Instruksi: Jelaskan kembali poin-poin di atas dengan bahasa santun dan mudah dipahami. "
+            "Jangan menambah angka atau fakta di luar rujukan. "
+            "Jika pertanyaan tidak sesuai rujukan, ulangi rujukan saja."
         )
         llm_resp = call_ollama(prompt)
-        if llm_resp:
+        if llm_resp and _aman(llm_resp, fallback):
             return llm_resp
 
     return fallback or FALLBACK_INTENT_TEMPLATES.get("help")
