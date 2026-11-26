@@ -1,4 +1,5 @@
 import json
+import re
 from database.connection import save_session_state, get_session_state, clear_session_state
 from nlu.extractor import (
     extract_ticker, extract_nominal, extract_duration_years,
@@ -10,48 +11,145 @@ from modules.clustering import get_single_asset_cluster, get_assets_by_profile
 from modules.risk_profile import RISK_QUESTIONS, evaluate_risk_profile
 from modules.calculator import calculate_dca, calculate_pension
 
+# Hanya intent ini yang boleh membatalkan wizard yang sedang berjalan.
+START_INTENTS = {
+    "start_risk_profile", "start_trend", "start_sentiment",
+    "start_dca_calculator", "start_pension_calculator",
+}
+# Status menunggu jawaban pengguna; tidak dihitung sebagai wizard.
+STATUS_MENUNGGU = ["awaiting_trend_ticker", "awaiting_trend_period", "awaiting_replay"]
+
+YA = {"ya", "iya", "y", "ok", "oke", "boleh", "mau", "lanjut", "yuk", "tampilkan"}
+TIDAK = {"tidak", "nggak", "gak", "ga", "enggak", "no", "n", "skip", "gausah"}
+
+# Pertanyaan riwayat: "tadi analisis apa?", "hasil dca tadi berapa?"
+_WAKTU = re.compile(r"\b(tadi|barusan|sebelumnya|terakhir)\b")
+_OBJEK = re.compile(r"\b(analisis|hasil|hitung\w*|simulasi|kalkulasi)\b")
+_TANYA = re.compile(r"\b(apa|berapa)\b")
+
+
 class StateMachine:
     def __init__(self, session_id: str):
         self.session_id = session_id
         session = get_session_state(session_id)
         self.current_intent = session.get("current_intent")
-        self.state_data = session.get("state_data", {})
+        self.state_data = session.get("state_data") or {}
+        # Riwayat analisis terakhir disimpan di dalam state_data agar tahan reset().
+        self.last_analysis = self.state_data.pop("last_analysis", None)
         self.last_ticker = session.get("last_ticker")
 
     def save(self):
-        save_session_state(
-            self.session_id,
-            self.current_intent,
-            self.state_data,
-            self.last_ticker
-        )
+        data = dict(self.state_data)
+        if self.last_analysis:
+            data["last_analysis"] = self.last_analysis
+        save_session_state(self.session_id, self.current_intent, data, self.last_ticker)
 
     def reset(self):
         self.current_intent = None
         self.state_data = {}
         clear_session_state(self.session_id)
 
+    # ------------------------------------------------------------------
+    # Ingatan analisis terakhir
+    # ------------------------------------------------------------------
+    def _catat(self, jenis: str, **params):
+        """Catat parameter analisis (bukan hasilnya) agar bisa diringkas dan dihitung ulang."""
+        self.last_analysis = {"jenis": jenis, "params": params}
+
+    @staticmethod
+    def _tanya_riwayat(text: str) -> bool:
+        t = text.lower()
+        return bool(_WAKTU.search(t) and _OBJEK.search(t) and _TANYA.search(t))
+
+    @staticmethod
+    def _ringkas(rec: dict) -> str:
+        j, p = rec["jenis"], rec["params"]
+        if j == "trend":
+            return f"analisis tren {p['ticker']} selama {p['period_years']:g} tahun"
+        if j == "sentiment":
+            return f"analisis sentimen berita {p['ticker']}"
+        if j == "sentiment_news":
+            return f"daftar berita dan sentimen {p['ticker']}"
+        if j == "cluster":
+            return f"posisi cluster aset {p['ticker']}"
+        if j == "dca":
+            return (f"simulasi DCA Rp {p['monthly_amount']:,.0f} per bulan, "
+                    f"return {p['annual_return'] * 100:.1f}% per tahun, {p['duration_years']:g} tahun")
+        if j == "pension":
+            return (f"simulasi dana pensiun usia {p['current_age']} sampai {p['retirement_age']} tahun "
+                    f"dengan pengeluaran Rp {p['monthly_expense']:,.0f} per bulan")
+        return "kuesioner profil risiko"
+
+    @staticmethod
+    def _hitung_ulang(rec: dict) -> dict:
+        j, p = rec["jenis"], rec["params"]
+        if j == "trend":
+            return {"type": "trend_result",
+                    "data": calculate_log_linear_trend(p["ticker"], period_years=p["period_years"])}
+        if j == "sentiment":
+            return {"type": "sentiment_result", "data": get_asset_sentiment_summary(p["ticker"])}
+        if j == "sentiment_news":
+            return {"type": "sentiment_news_result", "data": get_asset_sentiment_summary(p["ticker"])}
+        if j == "cluster":
+            return {"type": "cluster_single_result", "data": get_single_asset_cluster(p["ticker"])}
+        if j == "dca":
+            return {"type": "dca_result", "data": calculate_dca(
+                monthly_amount=p["monthly_amount"], annual_return_rate=p["annual_return"],
+                duration_years=p["duration_years"])}
+        if j == "pension":
+            proj_inf = project_inflation_rate()
+            return {"type": "pension_result", "inflation_metadata": proj_inf, "data": calculate_pension(
+                current_age=p["current_age"], retirement_age=p["retirement_age"],
+                monthly_expense_now=p["monthly_expense"],
+                annual_inflation_rate=proj_inf.get("projected_inflation", 3.5) / 100.0,
+                annual_return_rate=0.08)}
+        return {"type": "risk_result", "data": evaluate_risk_profile(p["answers"])}
+
+    def _jawab_riwayat(self) -> dict:
+        if not self.last_analysis:
+            return {"type": "text",
+                    "text": "Belum ada analisis di percakapan ini. Coba: 'tren BBCA 1 tahun', "
+                            "'sentimen bitcoin', atau 'hitung DCA'."}
+        self.current_intent = "awaiting_replay"
+        self.state_data = {}
+        self.save()
+        return {"type": "text",
+                "text": f"Tadi kamu melihat {self._ringkas(self.last_analysis)}.\n"
+                        "Mau kutampilkan hasil lengkapnya lagi? (ya/tidak)"}
+
+    def _jawaban_terbaca(self, text: str) -> bool:
+        """True bila teks bisa dibaca sebagai jawaban untuk langkah wizard yang sedang aktif."""
+        intent, step = self.current_intent, self.state_data.get("step")
+        if intent == "risk_profile_in_progress":
+            return bool(extract_option_number(text))
+        if intent == "dca_wizard":
+            if step == "return":
+                return extract_percentage(text) is not None
+            if step == "duration":
+                return bool(extract_duration_years(text))
+            return bool(extract_nominal(text))          # langkah "amount" (bawaan)
+        if intent == "pension_wizard":
+            if step == "monthly_expense":
+                return bool(extract_nominal(text))
+            return bool(extract_option_number(text) or extract_duration_years(text))
+        return False
+
     def process_message(self, text: str, predicted_intent: str) -> dict:
         """
         Memproses teks pengguna berdasarkan state aktif saat ini dan intent hasil NLU.
         """
-        # Ekstrak ticker jika ada di teks untuk memperbarui konteks aktif
-        found_ticker = extract_ticker(text)
+        # Pertanyaan riwayat tidak boleh dianggap ticker ("tadi" -> TADI.JK)
+        tanya_riwayat = self._tanya_riwayat(text)
+        found_ticker = None if tanya_riwayat else extract_ticker(text)
         if found_ticker:
             self.last_ticker = found_ticker
 
-        # Prioritas Interupsi: Jika pengguna mengetik perintah/topik baru secara eksplisit, reset wizard lama
-        interrupt_intents = [
-            "start_risk_profile", "start_trend", "start_sentiment",
-            "start_dca_calculator", "start_pension_calculator", "greeting",
-            "help", "faq_data_source", "data_last_update", "show_asset_cluster",
-            "recommend_by_profile", "explain_regression", "explain_r2",
-            "explain_sentiment", "explain_cluster", "explain_volatility"
-        ]
-        if predicted_intent in interrupt_intents and not (self.current_intent == "risk_profile_in_progress" and extract_option_number(text)):
-            if self.current_intent not in [None, "awaiting_trend_ticker", "awaiting_trend_period"]:
-                self.current_intent = None
-                self.state_data = {}
+        # Wizard aktif hanya dibatalkan bila jawabannya TIDAK terbaca DAN pengguna
+        # jelas memulai perintah baru (intent start_*). Tebakan lain diabaikan.
+        wizard_aktif = self.current_intent not in [None] + STATUS_MENUNGGU
+        if wizard_aktif and predicted_intent in START_INTENTS and not self._jawaban_terbaca(text):
+            self.current_intent = None
+            self.state_data = {}
 
         # ----------------------------------------------------
         # 1. Alur Kuesioner Profil Risiko (Q1 - Q6)
@@ -81,8 +179,11 @@ class StateMachine:
                 }
             else:
                 # Selesai kuesioner Q1-Q6
+                jawaban = dict(self.state_data)
                 eval_result = evaluate_risk_profile(self.state_data)
                 self.reset()
+                self._catat("risk", answers=jawaban)
+                self.save()
                 return {
                     "type": "risk_result",
                     "data": eval_result
@@ -98,7 +199,7 @@ class StateMachine:
                 if not nom:
                     return {"type": "text", "text": "Mohon masukkan nominal investasi bulanan yang valid (misal: Rp 1.000.000 atau 500rb)."}
                 self.state_data["monthly_amount"] = nom
-                
+
                 # Cek apakah return sudah ada dari tren
                 if "annual_return" not in self.state_data:
                     self.state_data["step"] = "return"
@@ -123,14 +224,21 @@ class StateMachine:
                 if not dur:
                     return {"type": "text", "text": "Mohon masukkan durasi investasi yang valid dalam satuan tahun (misal: 3 tahun atau 5 tahun)."}
                 self.state_data["duration_years"] = dur
-                
+
                 # Hitung hasil DCA
+                params = {
+                    "monthly_amount": self.state_data["monthly_amount"],
+                    "annual_return": self.state_data["annual_return"],
+                    "duration_years": dur,
+                }
                 calc_result = calculate_dca(
-                    monthly_amount=self.state_data["monthly_amount"],
-                    annual_return_rate=self.state_data["annual_return"],
+                    monthly_amount=params["monthly_amount"],
+                    annual_return_rate=params["annual_return"],
                     duration_years=dur
                 )
                 self.reset()
+                self._catat("dca", **params)
+                self.save()
                 return {
                     "type": "dca_result",
                     "data": calc_result
@@ -165,12 +273,17 @@ class StateMachine:
                 if not expense or expense < 500_000:
                     return {"type": "text", "text": "Mohon masukkan nominal pengeluaran bulanan yang valid (minimal Rp 500.000)."}
                 self.state_data["monthly_expense"] = expense
-                
+
                 # Dapatkan proyeksi inflasi dinamis dari regresi BI/BPS
                 proj_inf = project_inflation_rate()
                 default_inf = proj_inf.get("projected_inflation", 3.5) / 100.0
                 self.state_data["annual_inflation"] = default_inf
 
+                params = {
+                    "current_age": self.state_data["current_age"],
+                    "retirement_age": self.state_data["retirement_age"],
+                    "monthly_expense": expense,
+                }
                 # Hitung hasil Pensiun
                 pension_res = calculate_pension(
                     current_age=self.state_data["current_age"],
@@ -180,6 +293,8 @@ class StateMachine:
                     annual_return_rate=0.08  # Default return konservatif-moderat
                 )
                 self.reset()
+                self._catat("pension", **params)
+                self.save()
                 return {
                     "type": "pension_result",
                     "data": pension_res,
@@ -195,11 +310,32 @@ class StateMachine:
             trend_res = calculate_log_linear_trend(ticker, period_years=dur)
             self.reset()
             self.last_ticker = ticker
+            self._catat("trend", ticker=ticker, period_years=dur)
             self.save()
             return {
                 "type": "trend_result",
                 "data": trend_res
             }
+
+        # ----------------------------------------------------
+        # 4b. Konfirmasi tampilkan ulang analisis terakhir
+        # ----------------------------------------------------
+        if self.current_intent == "awaiting_replay":
+            jawaban = re.sub(r"[^\w\s]", "", text.lower()).strip()
+            self.current_intent = None
+            self.state_data = {}
+            self.save()
+            if jawaban in YA and self.last_analysis:
+                return self._hitung_ulang(self.last_analysis)
+            if jawaban in TIDAK:
+                return {"type": "text", "text": "Oke."}
+            # jawaban lain: lanjut diproses sebagai pesan biasa
+
+        # ----------------------------------------------------
+        # 4c. Pertanyaan riwayat: "tadi analisis apa?"
+        # ----------------------------------------------------
+        if tanya_riwayat:
+            return self._jawab_riwayat()
 
         # ----------------------------------------------------
         # 5. Intent Handling Bebas (Fresh Intents)
@@ -223,7 +359,7 @@ class StateMachine:
                 self.current_intent = "awaiting_trend_ticker"
                 self.save()
                 return {"type": "text", "text": "Aset apa yang ingin Anda lihat trennya? (Contoh: BBCA, BBRI, IHSG, atau Bitcoin)."}
-            
+
             if not dur:
                 self.current_intent = "awaiting_trend_period"
                 self.state_data = {"ticker": ticker}
@@ -231,6 +367,8 @@ class StateMachine:
                 return {"type": "text", "text": f"Untuk aset {ticker}, berapa periode tahun yang ingin dianalisis? (Contoh: 1 tahun, 2 tahun, atau 3 tahun)."}
 
             trend_res = calculate_log_linear_trend(ticker, period_years=dur)
+            self._catat("trend", ticker=ticker, period_years=dur)
+            self.save()
             return {"type": "trend_result", "data": trend_res}
 
         elif self.current_intent == "awaiting_trend_ticker":
@@ -286,8 +424,9 @@ class StateMachine:
         elif predicted_intent == "start_sentiment":
             ticker = found_ticker or self.last_ticker or "BBCA.JK"
             self.last_ticker = ticker
-            self.save()
             sentiment_summary = get_asset_sentiment_summary(ticker)
+            self._catat("sentiment", ticker=ticker)
+            self.save()
             return {
                 "type": "sentiment_result",
                 "data": sentiment_summary
@@ -296,6 +435,8 @@ class StateMachine:
         elif predicted_intent == "sentiment_news_list":
             ticker = found_ticker or self.last_ticker or "BBCA.JK"
             sentiment_summary = get_asset_sentiment_summary(ticker)
+            self._catat("sentiment_news", ticker=ticker)
+            self.save()
             return {
                 "type": "sentiment_news_result",
                 "data": sentiment_summary
@@ -304,6 +445,8 @@ class StateMachine:
         elif predicted_intent == "show_asset_cluster":
             ticker = found_ticker or self.last_ticker or "BBCA.JK"
             cluster_info = get_single_asset_cluster(ticker)
+            self._catat("cluster", ticker=ticker)
+            self.save()
             return {
                 "type": "cluster_single_result",
                 "data": cluster_info
